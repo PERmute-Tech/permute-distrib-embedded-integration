@@ -80,7 +80,7 @@ L'upload de documents (CNI, ...) n'est pas encore couvert par cette doc/app.
 { "id": "019aabcd-1234-7000-9999-abcdef012345", "...": "…" }
 ```
 
-💡 L'ID du transfert doit être stocké coté CRM/Extranet pour permettre la génération d'un nouveau magic link (modification ou consultation ultérieure du transfert).
+> 💡 L'ID du transfert doit être stocké coté CRM/Extranet pour permettre la génération d'un nouveau magic link (modification ou consultation ultérieure du transfert).
 
 ### 3. Créer le magic link — `POST {DISTRIBUTEUR_API_BASE_URL}/magic-links`
 
@@ -103,7 +103,7 @@ Pour des raisons de sécurité, le magic link généré est valable 1 minute et 
 Lors de son utilisation, il est échangé contre un cookie de session (HTTP only & Secure) valable 30 minutes. 
 Lors de la génération du magic link, un utilisateur PERmute est créé à la volée ou récupéré à partir de son `externalId` (ou à défaut de l'`email`). Cette identité est utilisée pour logger les actions de l'utilisateur, notamment dans l'historique du transfert. 
 
-4. **Redirection de l'utilisateur vers PERmute**
+### 4. **Redirection de l'utilisateur vers PERmute**
 
 Nous conseillons d'ouvrir le magic link dans un nouvel onglet ou une nouvelle fenêtre. 
 
