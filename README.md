@@ -17,6 +17,8 @@ l'utilisateur vers le parcours de transfert authentifié.
 
 ## Le flux 
 
+> 🔗 Documentation complète de l'API PERmute Distribution : [https://api.permute-app.fr/distributeur#tag/Magic-Link](https://api.permute-app.fr/distributeur#tag/Magic-Link)
+
 Au clic sur le bouton, un controller serveur (`src/app/api/launch/route.ts`) récupère auprès de l'API PERmute Distribution une URL temporaire (magic link) permettant à l'utilisateur de compléter sa demande de transfert. Dans le détail :
 
 1. **Récupération du token JWT du compte de service** — `POST {KEYCLOAK_BASE_URL}/realms/{tenant}/protocol/openid-connect/token`
