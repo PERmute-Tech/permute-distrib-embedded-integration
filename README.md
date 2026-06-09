@@ -1,14 +1,13 @@
-# permute-distrib-embedded-integration
+# Démo d'intégration de PERmute Distribution
 
-Application de **référence** pour intégrer le parcours de transfert PMD de PERmute
-dans un système tiers (un CRM, un espace conseiller…) via le système de
-**magic link**.
+Application de **démonstration** d'intégration du parcours PERmute Distribution
+dans un système tiers (CRM, extranet, ...) via le système de **magic link**.   
+Cette app de démo ne couvre pas la connexion par SSO. 
 
-Elle simule un **CRM client** (« Patrimoine Conseil ») : depuis un dossier de
+Elle simule un **Extranet/CRM client** (« Patrimoine Conseil ») : depuis un dossier de
 souscription, un bouton _« Démarrer le transfert PMD »_ déclenche, **côté
 serveur**, la chaîne complète d'appels au backend PERmute, puis redirige
-l'utilisateur vers le parcours de transfert authentifié — **sans aucune
-connexion**.
+l'utilisateur vers le parcours de transfert authentifié.
 
 > Le but du repo est double : **documenter** les 3 appels à implémenter et
 > fournir un exemple **exécutable** que vous pouvez lancer en local contre un
@@ -16,19 +15,17 @@ connexion**.
 
 ---
 
-## Le flux en 3 appels
+## Le flux 
 
-Au clic sur le bouton, un Route Handler serveur (`src/app/api/launch/route.ts`,
-le **BFF**) rejoue le flux du compte de service externe **en une seule
-requête** (le magic link expire en 60 s) :
+Au clic sur le bouton, un controller serveur (`src/app/api/launch/route.ts`) récupère auprès de l'API PERmute Distribution une URL temporaire (magic link) permettant à l'utilisateur de compléter sa demande de transfert. Dans le détail :
 
-1. **Token** — `POST {KEYCLOAK_BASE_URL}/realms/{tenant}/protocol/openid-connect/token`
+1. **Récupération du token JWT du compte de service** — `POST {KEYCLOAK_BASE_URL}/realms/{tenant}/protocol/openid-connect/token`
    (grant `client_credentials` avec le compte de service) → `access_token` ;
-2. **Création d'un brouillon vide** — `POST {DISTRIBUTEUR_API_BASE_URL}/transfers/per`
+2. **Création d'un brouillon de transfert (vide ou pré-rempli)** — `POST {DISTRIBUTEUR_API_BASE_URL}/transfers/per`
    (`Authorization: Bearer …` + en-tête `X-TENANT-NAME`) → `{ id }` ;
 3. **Génération du magic link** — `POST {DISTRIBUTEUR_API_BASE_URL}/magic-links`
    (mêmes en-têtes, corps `{ transferId, …identité conseiller }`) → `{ url }` ;
-4. **Redirection 303** du navigateur vers `url` → atterrissage **authentifié**
+4. **Redirection de l'utilisateur vers PERmute** → atterrissage **authentifié**
    sur la première étape du parcours de transfert.
 
 ```mermaid
@@ -75,16 +72,19 @@ Body `application/x-www-form-urlencoded` : `grant_type=client_credentials`, `cli
 
 ### 2. Créer un brouillon vide — `POST {DISTRIBUTEUR_API_BASE_URL}/transfers/per`
 
-Body `{}` — tous les champs du brouillon (`holderFirstName`, `holderLastName`, …) sont optionnels.
+Body `{}` — tous les champs du brouillon (`holderFirstName`, `holderLastName`, …) sont optionnels. 
+L'upload de documents (CNI, ...) n'est pas encore couvert par cette doc/app. 
 
 ```jsonc
 // 200 OK (PerTransferDTO) — seul `id` est utilisé ici
 { "id": "019aabcd-1234-7000-9999-abcdef012345", "...": "…" }
 ```
 
+💡 L'ID du transfert doit être stocké coté CRM/Extranet pour permettre la génération d'un nouveau magic link (modification ou consultation ultérieure du transfert).
+
 ### 3. Créer le magic link — `POST {DISTRIBUTEUR_API_BASE_URL}/magic-links`
 
-Identité du **conseiller** (côté CRM partenaire) qui ouvrira le lien :
+Pour des raisons de traçabilité, la création du magic link requiert l'dentité du **conseiller / utilisateur** (côté Extranet/CRM) qui ouvrira le lien :
 
 | champ | type | requis | contrainte |
 | --- | --- | :---: | --- |
@@ -98,6 +98,15 @@ Identité du **conseiller** (côté CRM partenaire) qui ouvrira le lien :
 // 200 OK (MagicLinkDTO) — lien à usage unique, valable 1 minute
 { "url": "https://{tenant}.<preprod>/transfers/…", "expiresAt": "2026-06-09T10:01:00Z" }
 ```
+
+Pour des raisons de sécurité, le magic link généré est valable 1 minute et utilisable une seule fois. 
+Lors de son utilisation, il est échangé contre un cookie de session (HTTP only & Secure) valable 30 minutes. 
+Lors de la génération du magic link, un utilisateur PERmute est créé à la volée ou récupéré à partir de son `externalId` (ou à défaut de l'`email`). Cette identité est utilisée pour logger les actions de l'utilisateur, notamment dans l'historique du transfert. 
+
+4. **Redirection de l'utilisateur vers PERmute**
+
+Nous conseillons d'ouvrir le magic link dans un nouvel onglet ou une nouvelle fenêtre. 
+
 
 ---
 
@@ -169,8 +178,9 @@ src/
   env.mjs                 # validation des variables d'environnement
 ```
 
-## Hors périmètre
+## Hors périmètre (à suivre)
 
-- **Le retour vers le CRM** en fin de parcours (le parcours se termine sur
+- **Le retour vers l'Extranet / CRM** en fin de parcours (le parcours se termine sur
   l'écran de complétion côté distributeur).
-- **La production** : l'app est volontairement inerte en production.
+- **L'upload de documents** lors de la création du brouillon
+- **La consultation ultérieure du transfert**, non couvert par cette app de démo, mais il suffit de générer un magic link pour y accéder 
