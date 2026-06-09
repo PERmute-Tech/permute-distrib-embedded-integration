@@ -32,8 +32,8 @@ Au clic sur le bouton, un controller serveur (`src/app/api/launch/route.ts`) ré
 
 ```mermaid
 sequenceDiagram
-    participant B as Navigateur (faux CRM)
-    participant BFF as BFF /api/launch (serveur)
+    participant B as Frontend Extranet/CRM (navigateur)
+    participant BFF as Backend Extranet/CRM (coté serveur)
     participant KC as Keycloak
     participant API as API distributeur
     participant D as Parcours distributeur
@@ -152,16 +152,16 @@ pnpm lint:ts    # vérification TypeScript
 ## Sécurité
 
 - **Secret côté serveur uniquement** : `SA_CLIENT_SECRET` est une variable
-  serveur (pas de préfixe `NEXT_PUBLIC_`). Le token est obtenu par le BFF et
+  serveur (pas de préfixe `NEXT_PUBLIC_`). Le token est obtenu par le backend et
   **n'atteint jamais le navigateur**.
-- **Tout passe par le BFF** : les 3 appels backend sont émis côté serveur
+- **Tout passe par le backend Extranet/CRM** : les 3 appels backend sont émis côté serveur
   (server-to-server) — aucune requête cross-origin depuis le navigateur, donc
   **pas de configuration CORS** nécessaire.
 - **Redirection validée** : l'URL du magic link renvoyée par le back est
   contrôlée avant redirection (`assertSafeMagicLinkUrl` : schéma http(s) + hôte
   préfixé par le tenant), pour fermer tout open-redirect.
 - **Gating** : l'app est inerte (**404**) si `NEXT_PUBLIC_ENV === 'production'`
-  — sur toutes les pages (`layout.tsx`) et sur le BFF (`/api/launch`).
+  — sur toutes les pages (`layout.tsx`) et coté backend (`/api/launch`).
 
 ## Structure
 
@@ -170,7 +170,7 @@ src/
   app/
     page.tsx              # le faux CRM (« Patrimoine Conseil »)
     layout.tsx            # layout + gating production
-    api/launch/route.ts   # le BFF : rejoue les 3 appels puis 303
+    api/launch/route.ts   # le backend : joue les 3 appels puis 303
     error/ , not-found/   # pages d'erreur
   features/crm/
     magicLinkClient.ts    # ⭐ les 3 appels (token / draft / magic-link)
