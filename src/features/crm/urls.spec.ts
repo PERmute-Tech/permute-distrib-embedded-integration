@@ -38,6 +38,12 @@ describe('assertSafeMagicLinkUrl', () => {
     expect(assertSafeMagicLinkUrl(url, 'distributeur')).toBe(url);
   });
 
+  it('accepts a dedicated tenant served on its bare subdomain (pmd_ stripped)', () => {
+    const url =
+      'https://demodistrib.distributeur.preprod.permute-app.fr/transfers/abc/initiation';
+    expect(assertSafeMagicLinkUrl(url, 'pmd_demodistrib')).toBe(url);
+  });
+
   it('rejects a non-http(s) scheme (open-redirect guard)', () => {
     expect(() =>
       assertSafeMagicLinkUrl('javascript:alert(1)', 'distributeur')
