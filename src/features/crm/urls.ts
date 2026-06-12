@@ -1,5 +1,7 @@
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
 
+const TENANT_SLUG_PREFIX = 'pmd_';
+
 /**
  * Keycloak `client_credentials` token endpoint for the given realm.
  */
@@ -12,8 +14,9 @@ export const buildCreateDraftUrl = (apiBaseUrl: string): string =>
 export const buildCreateMagicLinkUrl = (apiBaseUrl: string): string =>
   `${trimTrailingSlash(apiBaseUrl)}/magic-links`;
 
-// The magic link redirects the browser to the tenant subdomain: we only
-// accept http(s) and a host prefixed by the slug, to guard against open-redirect.
+// The magic link redirects the browser to the tenant subdomain — the backend
+// serves it on the bare slug (pmd_ prefix stripped): we only accept http(s) and
+// that subdomain, to guard against open-redirect.
 export const assertSafeMagicLinkUrl = (
   url: string,
   tenantSlug: string
@@ -27,7 +30,10 @@ export const assertSafeMagicLinkUrl = (
   if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
     throw new Error(`Schéma de redirection refusé : ${parsed.protocol}`);
   }
-  if (!parsed.hostname.startsWith(`${tenantSlug}.`)) {
+  const expectedSubdomain = tenantSlug.startsWith(TENANT_SLUG_PREFIX)
+    ? tenantSlug.slice(TENANT_SLUG_PREFIX.length)
+    : tenantSlug;
+  if (!parsed.hostname.startsWith(`${expectedSubdomain}.`)) {
     throw new Error(
       `Hôte du magic link inattendu (${parsed.hostname}) — ne correspond pas au tenant « ${tenantSlug} »`
     );
